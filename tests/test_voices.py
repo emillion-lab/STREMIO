@@ -30,7 +30,7 @@ def test_title_prefix_is_ignored():
     assert m.character == "Agent Smith"
 
 
-def test_trailing_number_is_ignored():
+def test_trailing_number_is_ignored_for_real_names():
     assert match_speakers(["NEO 2"], CAST)["NEO 2"].gender == "male"
 
 
@@ -39,11 +39,6 @@ def test_generic_label_falls_back_to_itself():
     assert m["WOMAN"].gender == "female"
     assert m["MAN"].gender == "male"
     assert m["WOMAN"].source == "label"
-
-
-def test_numbered_generic_label_still_works():
-    assert match_speakers(["COP 1"], CAST)["COP 1"].gender == "unknown"
-    assert match_speakers(["MAN 2"], CAST)["MAN 2"].gender == "male"
 
 
 def test_unknown_speaker_stays_unknown():
@@ -62,6 +57,44 @@ def test_stats_add_up():
     assert st["speakers"] == 4
     assert st["male"] + st["female"] + st["unknown"] == 4
     assert st["from_tmdb"] == 2
+
+
+# --- родови роли: TMDb ги слива, а зад тях стоят различни хора -----------
+
+CROWD = [
+    {"character": "Cop", "name": "Actor G", "gender": 1},
+    {"character": "Neo", "name": "Actor A", "gender": 2},
+]
+
+
+def test_numbered_role_is_not_trusted():
+    """COP 1 и COP 2 са двама души зад един запис в TMDb."""
+    m = match_speakers(["COP 1", "COP 2"], CROWD)
+    assert all(v.gender == "unknown" for v in m.values())
+
+
+def test_bare_role_distrusted_when_numbered_siblings_exist():
+    assert match_speakers(["COP", "COP 1", "COP 2"], CROWD)["COP"].gender == "unknown"
+
+
+def test_bare_role_alone_is_still_used():
+    assert match_speakers(["COP"], CROWD)["COP"].gender == "female"
+
+
+def test_real_names_are_unaffected_by_the_role_rule():
+    assert match_speakers(["NEO", "COP 1"], CROWD)["NEO"].gender == "male"
+
+
+def test_conflicting_genders_for_one_character_give_unknown():
+    cast = [
+        {"character": "Twin", "name": "X", "gender": 1},
+        {"character": "Twin", "name": "Y", "gender": 2},
+    ]
+    assert match_speakers(["TWIN"], cast)["TWIN"].gender == "unknown"
+
+
+def test_numbered_generic_label_uses_the_label():
+    assert match_speakers(["MAN 2"], CAST)["MAN 2"].gender == "male"
 
 
 # --- раздаване на гласове ------------------------------------------------
