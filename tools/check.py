@@ -3,9 +3,11 @@
 
     python -m tools.check path/to/file.srt
     python -m tools.check path/to/file.srt --lines 40
+    python -m tools.check path/to/file.srt --utt
 
 Показва статистиката и как са разпознати първите реплики, за да се види
 веднага дали етикетите на конкретния рип се хващат от регексите.
+С --utt показва слетите изказвания — това, което ще влезе в TTS.
 """
 from __future__ import annotations
 
@@ -13,7 +15,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from tiflo import srt
+from tiflo import srt, utterance
 
 
 def read(path: Path) -> str:
@@ -36,10 +38,37 @@ def timecode(seconds: float) -> str:
     return f"{h:d}:{m:02d}:{s:02d}"
 
 
+def _show_utterances(cues, limit: int) -> int:
+    utts = utterance.build(cues)
+    us = utterance.stats(utts)
+    print("\n  След сливане:")
+    print(f"    изказвания     {us['utterances']}  ({us['speech']} реч, {us['sound']} звук)")
+    print(f"    слети          {us['merged']}  (средно {us['avg_parts']} реда)")
+    print(f"    най-дълго      {us['longest_s']} сек")
+    print(f"    тесни слотове  {us['tight_slots']}  (>17 знака/сек — ще трябва свиване)")
+
+    print(f"\n  Първите {limit} изказвания:\n")
+    for u in utts[:limit]:
+        if u.kind == "sound":
+            who = "· звук"
+        elif u.generic:
+            who = f"~{u.speaker}"
+        elif u.inferred:
+            who = f"({u.speaker})"
+        else:
+            who = u.speaker or "?"
+        mark = f"×{u.parts}" if u.parts > 1 else "  "
+        print(f"    {timecode(u.start)} {mark} {who:<16} {u.text[:70]}")
+    print()
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Проверка на SDH субтитри")
     ap.add_argument("path", type=Path)
     ap.add_argument("--lines", type=int, default=25, help="колко реплики да покаже")
+    ap.add_argument("--utt", action="store_true",
+                    help="покажи слети изказвания вместо сурови реплики")
     args = ap.parse_args()
 
     if not args.path.exists():
@@ -68,6 +97,9 @@ def main() -> int:
         print("\n  Най-често срещани имена:")
         for name, spans in top:
             print(f"    {name:<20} {len(spans)}")
+
+    if args.utt:
+        return _show_utterances(cues, args.lines)
 
     print(f"\n  Първите {args.lines} реплики:\n")
     shown = 0
