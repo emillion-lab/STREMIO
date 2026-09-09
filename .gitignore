@@ -1,0 +1,27 @@
+# Каквото се вкарва за тест — не в git
+*.srt
+*.vtt
+*.ass
+*.sub
+*.idx
+!fixtures/*.srt
+
+# Медия и изходи
+*.mp3
+*.m4b
+*.wav
+*.mp4
+*.mkv
+out/
+jobs/
+
+# Тайни
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
