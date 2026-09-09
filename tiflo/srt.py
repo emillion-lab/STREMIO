@@ -20,6 +20,13 @@ _SOUND_ONLY = re.compile(r"^\s*[\[(][^\])]*[\])]\s*$")
 _SOUND_ANY = re.compile(r"[\[(][^\])]*[\])]")
 _DASH = re.compile(r"^\s*[-\u2013\u2014]\s*")
 
+# Кредити на риппера — не са реплика и не бива да се четат на глас.
+_CREDIT = re.compile(
+    r"(subtitle|subs|sync|synced|corrected|improved|translat|encoded|ripped)"
+    r"[\s\w]{0,20}(by|:)|www\.|https?://|opensubtitles|addic7ed|yify|@\w+\.\w",
+    re.I,
+)
+
 _NOT_A_NAME = {
     "OK", "TV", "CD", "USA", "FBI", "CIA", "OH", "AH", "NO", "YES",
     "МЪЖ", "ЖЕНА", "ГЛАС", "MAN", "WOMAN", "VOICE",
@@ -149,6 +156,8 @@ def parse(content: str) -> list[Cue]:
             row = _clean(raw)
             if not row:
                 continue
+            if _CREDIT.search(row):
+                continue
             if _SOUND_ONLY.match(row):
                 cue.sounds.append(row.strip("[]() "))
                 continue
@@ -176,6 +185,9 @@ def parse(content: str) -> list[Cue]:
     return _carry_speakers(cues)
 
 
+CARRY_GAP = 4.0   # секунди пауза, след която името вече не се пренася
+
+
 def _carry_speakers(cues):
     last = None
     last_end = -99.0
@@ -187,7 +199,7 @@ def _carry_speakers(cues):
             # Тире означава смяна на говорителя — там няма какво да се пренесе.
             if line.dashed or cue.is_multi_speaker:
                 continue
-            if last and cue.start - last_end < 2.0:
+            if last and cue.start - last_end < CARRY_GAP:
                 line.speaker = last
                 line.inferred = True
         if cue.lines:
