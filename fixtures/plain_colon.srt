@@ -1,0 +1,19 @@
+1
+00:00:02,000 --> 00:00:04,500
+MARTA: You said you would call.
+
+2
+00:00:04,800 --> 00:00:06,200
+I waited by the window.
+
+3
+00:00:07,000 --> 00:00:09,500
+DANIEL: The line was dead all night.
+
+4
+00:00:10,000 --> 00:00:12,000
+MARTA: That is what you always say.
+
+5
+00:00:13,000 --> 00:00:15,000
+DANIEL: Because it is always true.
