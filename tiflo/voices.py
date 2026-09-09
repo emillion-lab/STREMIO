@@ -40,6 +40,17 @@ _NOISE = re.compile(
 )
 _TRAILING_NUM = re.compile(r"\s*#?\d+$")
 
+# Родови роли. TMDb ги води като един запис ("Cop"), но зад тях стоят
+# няколко различни статисти. Полът на единствения вписан актьор не
+# важи за всички — затова тук не се вярва на TMDb.
+_ROLE_WORDS = {
+    "cop", "police", "policeman", "policewoman", "guard", "soldier",
+    "officer", "nurse", "doctor", "waiter", "waitress", "driver",
+    "bartender", "reporter", "student", "teacher", "clerk", "agent",
+    "man", "woman", "boy", "girl", "kid", "child", "voice", "announcer",
+    "messenger", "operator", "pilot", "technician", "prisoner", "worker",
+}
+
 
 @dataclass
 class Voice:
@@ -93,40 +104,53 @@ def match_speakers(speakers: list[str], cast: list[dict]) -> dict[str, Match]:
     (SMITH в "Agent Smith"), после размито. Каквото не се хване, пада
     на етикета (MAN/WOMAN) или остава неизвестно — за диаризацията.
     """
-    by_exact: dict[str, dict] = {}
-    by_token: dict[str, dict] = {}
+    by_exact: dict[str, list[dict]] = {}
+    by_token: dict[str, list[dict]] = {}
     for entry in cast:
         char = (entry.get("character") or "").strip()
         if not char:
             continue
-        by_exact.setdefault(_norm(char), entry)
+        by_exact.setdefault(_norm(char), []).append(entry)
         for token in re.split(r"[\s/,]+", char):
             token = _norm(token)
             if len(token) > 2:
-                by_token.setdefault(token, entry)
+                by_token.setdefault(token, []).append(entry)
+
+    # Ако COP 1 и COP 2 съществуват, значи и голото COP е статист —
+    # тогава и на него не се вярва.
+    crowded = {_norm(s) for s in speakers if _TRAILING_NUM.search(s.strip())}
 
     out: dict[str, Match] = {}
     for speaker in speakers:
         key = _norm(speaker)
-        entry, conf, how = None, 0.0, "none"
+        numbered = bool(_TRAILING_NUM.search(speaker.strip())) or key in crowded
+        role_like = key.split()[0] in _ROLE_WORDS if key else False
+        entries, conf, how = None, 0.0, "none"
 
         if key in by_exact:
-            entry, conf, how = by_exact[key], 1.0, "tmdb"
+            entries, conf, how = by_exact[key], 1.0, "tmdb"
         elif key in by_token:
-            entry, conf, how = by_token[key], 0.9, "tmdb"
+            entries, conf, how = by_token[key], 0.9, "tmdb"
         else:
             near = difflib.get_close_matches(key, by_exact, n=1, cutoff=0.85)
             if near:
-                entry = by_exact[near[0]]
+                entries = by_exact[near[0]]
                 conf = difflib.SequenceMatcher(None, key, near[0]).ratio()
                 how = "tmdb"
 
-        if entry is not None:
-            gender = _TMDB_GENDER.get(entry.get("gender", 0), "unknown")
-            if gender != "unknown":
+        # "COP 1" и "COP 2" са различни хора зад един запис в TMDb.
+        # По-добре неизвестно, отколкото сгрешен пол.
+        if entries and role_like and (numbered or len(entries) > 1):
+            entries = None
+
+        if entries:
+            found = {_TMDB_GENDER.get(e.get("gender", 0), "unknown") for e in entries}
+            found.discard("unknown")
+            if len(found) == 1:
+                first = entries[0]
                 out[speaker] = Match(
-                    speaker=speaker, gender=gender,
-                    character=entry.get("character"), actor=entry.get("name"),
+                    speaker=speaker, gender=found.pop(),
+                    character=first.get("character"), actor=first.get("name"),
                     confidence=round(conf, 2), source=how,
                 )
                 continue
