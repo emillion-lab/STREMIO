@@ -14,12 +14,28 @@ FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 
 
 def load(name: str):
+    if name == "messy":
+        return srt.parse(MESSY)
     return srt.parse((FIXTURES / name).read_text(encoding="utf-8-sig"))
 
 
+# BOM, CRLF, HTML/ASS тагове, липсващ индекс, обърнат таймкод.
+# Строи се тук, а не като файл — git нормализира точно тези байтове.
+MESSY = (
+    "\ufeff"
+    "1\r\n00:00:01,000 --> 00:00:03,000\r\n"
+    "<i>MARTA:</i> With tags and CRLF.\r\n\r\n"
+    "\r\n00:00:04,000 --> 00:00:06,000\r\n"
+    "Missing index above this one.\r\n\r\n"
+    "3\r\n00:00:08,000 --> 00:00:07,000\r\n"
+    "Broken timing, must be skipped.\r\n\r\n"
+    "4\r\n00:00:09,000 --> 00:00:11,500\r\n"
+    "{\\an8}DANIEL: With an ASS override tag.\r\n"
+)
+
 ALL_FIXTURES = [
     "plain_colon.srt", "brackets_and_sounds.srt",
-    "dashes_multi.srt", "no_labels.srt", "messy.srt",
+    "dashes_multi.srt", "no_labels.srt", "messy",
 ]
 
 
@@ -100,24 +116,24 @@ def test_two_speakers_on_separate_lines():
 # --- мръсен вход ---------------------------------------------------------
 
 def test_bom_crlf_and_html_tags():
-    cues = load("messy.srt")
+    cues = load("messy")
     assert cues[0].lines[0].speaker == "MARTA"
     assert "<i>" not in cues[0].text
 
 
 def test_missing_index_gets_one():
-    cues = load("messy.srt")
+    cues = load("messy")
     assert all(isinstance(c.idx, int) for c in cues)
 
 
 def test_reversed_timing_is_dropped():
-    cues = load("messy.srt")
+    cues = load("messy")
     assert all(c.end > c.start for c in cues)
     assert not any("Broken timing" in c.text for c in cues)
 
 
 def test_ass_override_tag_stripped():
-    cues = load("messy.srt")
+    cues = load("messy")
     assert cues[-1].lines[0].speaker == "DANIEL"
     assert "{" not in cues[-1].text
 
