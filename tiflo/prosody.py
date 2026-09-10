@@ -51,6 +51,15 @@ class Prosody:
     def ssml(self) -> str:
         return f'pitch="{self.pitch_st:+.1f}st" rate="{self.rate_pct:+.0f}%"'
 
+    @property
+    def pitch_ratio(self) -> float:
+        """Височината като множител — така я искат Android TTS и ffmpeg."""
+        return round(2 ** (self.pitch_st / 12.0), 3)
+
+    @property
+    def rate_ratio(self) -> float:
+        return round(1 + self.rate_pct / 100.0, 3)
+
 
 def semitones(target_hz: float, base_hz: float) -> float:
     """Разлика в полутонове между два основни тона."""
