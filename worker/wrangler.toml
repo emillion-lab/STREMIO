@@ -1,0 +1,14 @@
+name = "tiflo"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[kv_namespaces]]
+binding = "STATE"
+id = "9ae602e7e49e47f996e7e146a949c766"
+
+[[r2_buckets]]
+binding = "AUDIO"
+bucket_name = "tiflo-audio"
+
+# ADMIN_TOKEN се слага като secret, не тук:
+#   wrangler secret put ADMIN_TOKEN
