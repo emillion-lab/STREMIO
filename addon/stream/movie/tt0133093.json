@@ -3,7 +3,7 @@
     {
       "name": "TIFLO",
       "title": "Аудио дескрипция (BG) — проба",
-      "url": "https://emillion-lab.github.io/STREMIO/addon/audio/tiflo-demo.mp3",
+      "url": "https://cdn.jsdelivr.net/gh/emillion-lab/STREMIO@main/addon/audio/tiflo-demo.mp3",
       "behaviorHints": {
         "notWebReady": false
       }
