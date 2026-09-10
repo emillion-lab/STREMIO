@@ -1,0 +1,15 @@
+{
+  "id": "lab.emillion.tiflo",
+  "version": "0.1.0",
+  "name": "TIFLO — аудио дескрипция",
+  "description": "Озвучаване на субтитри за хора с увредено зрение. Добавя отделен аудио поток с прочетени реплики, всеки герой с различен глас.",
+  "logo": "https://emillion-lab.github.io/STREMIO/addon/logo.png",
+  "resources": ["stream"],
+  "types": ["movie"],
+  "idPrefixes": ["tt"],
+  "catalogs": [],
+  "behaviorHints": {
+    "configurable": false,
+    "configurationRequired": false
+  }
+}
