@@ -2,8 +2,7 @@ name: demo audio
 
 on:
   workflow_dispatch:
-  push:
-    paths: ["tools/make_demo.py", ".github/workflows/demo-audio.yml"]
+  # push тригерът махнат на 13.09.2026 — виж test.yml. Само ръчно засега.
 
 permissions:
   contents: write
